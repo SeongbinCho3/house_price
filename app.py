@@ -1,39 +1,34 @@
 import streamlit as st
 import pandas as pd
-import os
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# 페이지 설정 (가장 먼저 실행되어야 함)
-st.set_page_config(page_title="데이터 분석기", layout="wide")
+# --- 1. 파일 이름 정의 (이게 그래프 코드보다 먼저 와야 합니다!) ---
+file_name = '국토교통부_주택 공시가격 정보(2025)_샘플데이터.csv'
+
+# 한글 폰트 설정
+plt.rcParams['font.family'] = 'Malgun Gothic'
+plt.rcParams['axes.unicode_minus'] = False
 
 st.title("🏠 주택 공시가격 분석기")
 
-# 1. 현재 폴더에 어떤 파일들이 있는지 화면에 출력 (디버깅용)
-st.subheader("📁 현재 서버 폴더 파일 목록")
-files = os.listdir('.')
-st.write(files)
+try:
+    # --- 2. 데이터 읽기 ---
+    df = pd.read_csv(file_name, encoding='utf-8-sig')
+    
+    # --- 3. 그래프 그리기 (시군구 글자 바르게 설정) ---
+    st.subheader("📍 시군구별 주택 분포")
+    
+    counts = df['시군구'].value_counts()
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.barplot(x=counts.index, y=counts.values, ax=ax, palette='viridis')
+    
+    # [핵심] 글자를 바르게(45도 회전) 표시하여 겹침 방지
+    plt.xticks(rotation=45, ha='right', fontsize=12) 
+    plt.title("시군구별 주택 수", fontsize=15)
+    
+    st.pyplot(fig)
 
-# 2. 파일 읽기 시도
-file_name = '국토교통부_주택 공시가격 정보(2025)_샘플데이터.csv'
-
-if file_name in files:
-    try:
-        # 다양한 인코딩으로 시도 (흰 화면 방지)
-        try:
-            df = pd.read_csv(file_name, encoding='utf-8-sig')
-        except:
-            df = pd.read_csv(file_name, encoding='cp949')
-            
-        st.success(f"✅ '{file_name}' 데이터를 불러왔습니다!")
-        st.write("### 📊 데이터 요약")
-        st.dataframe(df.head())
-        
-        # 간단한 통계
-        if '공시가격' in df.columns:
-            st.write(f"**평균 공시가격:** {df['공시가격'].mean():,.0f} 원")
-            st.bar_chart(df['시군구'].value_counts())
-            
-    except Exception as e:
-        st.error(f"❌ 파일을 읽는 중 에러 발생: {e}")
-else:
+except FileNotFoundError:
     st.error(f"❌ 파일을 찾을 수 없습니다: {file_name}")
-    st.info("💡 깃허브에 CSV 파일이 제대로 올라갔는지 확인해 보세요!")
